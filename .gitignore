@@ -1,0 +1,13 @@
+# Dependencias instaladas
+node_modules/
+
+# Base de datos SQLite generada en tiempo de ejecución
+*.db
+*.db-shm
+*.db-wal
+
+# Variables de entorno reales (nunca subir al repo)
+.env
+
+# Logs
+*.log
