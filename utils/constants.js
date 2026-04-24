@@ -279,17 +279,9 @@ function getTierEmoji(rarezaLevel, single = false) {
 
   let emoji = r.medalla;
   if (global.EMOJIS_TIER) {
-    // Para el nivel 8 (Secreto) usamos la key 'Tiersecret' si existe
     const key = (rarezaLevel === 8) ? 'Tiersecret' : `Tier${r.grado}`;
     emoji = global.EMOJIS_TIER[key] || r.medalla;
   }
-
-  if (single) return emoji;
-
-  // Repetición visual por rango (S=1, SS=2, SSS=3, ????=4)
-  if (rarezaLevel === 6) return `${emoji}${emoji}`;               // Legendario SS x2
-  if (rarezaLevel === 7) return `${emoji}${emoji}${emoji}`;        // Mítico SSS x3
-  if (rarezaLevel === 8) return `${emoji}${emoji}${emoji}${emoji}`; // Secreto ???? x4
 
   return emoji;
 }
