@@ -1,0 +1,154 @@
+[
+  {
+    "id": "m_wins_3",
+    "tipo": "CARRERA_WIN",
+    "objetivo": 3,
+    "recompensa_cr": 5000,
+    "recompensa_xp": 100,
+    "desc": "Domina la pista: Gana 3 carreras contra el bot o jugadores."
+  },
+  {
+    "id": "m_wins_5",
+    "tipo": "CARRERA_WIN",
+    "objetivo": 5,
+    "recompensa_cr": 10000,
+    "recompensa_xp": 250,
+    "desc": "Piloto Incansable: Gana 5 carreras en un día."
+  },
+  {
+    "id": "m_fuga_3",
+    "tipo": "FUGA_WIN",
+    "objetivo": 3,
+    "recompensa_cr": 6000,
+    "recompensa_xp": 150,
+    "desc": "Escurridizo: Escapa de la policía 3 veces con éxito."
+  },
+  {
+    "id": "m_fuga_mult_5",
+    "tipo": "FUGA_MULT",
+    "objetivo": 5,
+    "recompensa_cr": 8000,
+    "recompensa_xp": 200,
+    "desc": "Al Límite: Escapa con un multiplicador de 5.0x o más."
+  },
+  {
+    "id": "m_fuga_mult_10",
+    "tipo": "FUGA_MULT",
+    "objetivo": 10,
+    "recompensa_cr": 25000,
+    "recompensa_xp": 500,
+    "desc": "Leyenda del Asfalto: Escapa con un multiplicador de 10.0x o más."
+  },
+  {
+    "id": "m_spend_25k",
+    "tipo": "SHOP_SPEND",
+    "objetivo": 25000,
+    "recompensa_cr": 2500,
+    "recompensa_xp": 50,
+    "desc": "Consumista: Gasta al menos 25.000 créditos en la tienda o mercado."
+  },
+  {
+    "id": "m_spend_100k",
+    "tipo": "SHOP_SPEND",
+    "objetivo": 100000,
+    "recompensa_cr": 15000,
+    "recompensa_xp": 300,
+    "desc": "Magnate: Invierte 100.000 créditos en tu flota o piezas."
+  },
+  {
+    "id": "m_piezas_2",
+    "tipo": "DESGUACE_PIEZA",
+    "objetivo": 2,
+    "recompensa_cr": 4000,
+    "recompensa_xp": 100,
+    "desc": "Chatarrero: Encuentra 2 piezas en el desguace."
+  },
+  {
+    "id": "m_piezas_5",
+    "tipo": "DESGUACE_PIEZA",
+    "objetivo": 5,
+    "recompensa_cr": 12000,
+    "recompensa_xp": 400,
+    "desc": "Restaurador: Encuentra 5 piezas en un solo día."
+  },
+  {
+    "id": "m_wins_10",
+    "tipo": "CARRERA_WIN",
+    "objetivo": 10,
+    "recompensa_cr": 25000,
+    "recompensa_xp": 500,
+    "desc": "Corredor Nato: Consigue 10 victorias en carreras."
+  },
+  {
+    "id": "m_wins_15",
+    "tipo": "CARRERA_WIN",
+    "objetivo": 15,
+    "recompensa_cr": 45000,
+    "recompensa_xp": 800,
+    "desc": "Intocable: Domina la calle con 15 victorias en un día."
+  },
+  {
+    "id": "m_fuga_5",
+    "tipo": "FUGA_WIN",
+    "objetivo": 5,
+    "recompensa_cr": 15000,
+    "recompensa_xp": 350,
+    "desc": "Piloto de Huida: Supera a la policía en 5 persecuciones."
+  },
+  {
+    "id": "m_fuga_10",
+    "tipo": "FUGA_WIN",
+    "objetivo": 10,
+    "recompensa_cr": 40000,
+    "recompensa_xp": 750,
+    "desc": "Fantasma: Completa 10 fugas sin ser atrapado."
+  },
+  {
+    "id": "m_fuga_mult_25",
+    "tipo": "FUGA_MULT",
+    "objetivo": 25,
+    "recompensa_cr": 20000,
+    "recompensa_xp": 400,
+    "desc": "Buscando Riesgos: Acumula 25.0x de multiplicador en Fugas exitosas."
+  },
+  {
+    "id": "m_fuga_mult_50",
+    "tipo": "FUGA_MULT",
+    "objetivo": 50,
+    "recompensa_cr": 50000,
+    "recompensa_xp": 1000,
+    "desc": "Adicto a la Adrenalina: Acumula un multiplicador de 50.0x en Fugas."
+  },
+  {
+    "id": "m_spend_50k",
+    "tipo": "SHOP_SPEND",
+    "objetivo": 50000,
+    "recompensa_cr": 5000,
+    "recompensa_xp": 100,
+    "desc": "Cliente Habitual: Gasta 50.000 créditos en el sistema."
+  },
+  {
+    "id": "m_spend_250k",
+    "tipo": "SHOP_SPEND",
+    "objetivo": 250000,
+    "recompensa_cr": 35000,
+    "recompensa_xp": 600,
+    "desc": "Socio Mayoritario: Invierte 250.000 créditos en tu colección."
+  },
+  {
+    "id": "m_piezas_10",
+    "tipo": "DESGUACE_PIEZA",
+    "objetivo": 10,
+    "recompensa_cr": 30000,
+    "recompensa_xp": 800,
+    "desc": "Buscador de Tesoros: Extrae 10 piezas del desguace."
+  },
+  {
+    "id": "m_piezas_15",
+    "tipo": "DESGUACE_PIEZA",
+    "objetivo": 15,
+    "recompensa_cr": 60000,
+    "recompensa_xp": 1500,
+    "desc": "Saqueador Profesional: Extrae 15 piezas en el desguace hoy."
+  }
+]
