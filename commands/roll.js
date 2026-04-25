@@ -124,90 +124,54 @@ module.exports = {
     const r = RAREZA[coche.rareza];
     const finalEmoji = getTierEmoji(coche.rareza, true);
 
-    // 3. Fase 1: Ruleta estilo CS:GO (Optimizado para Fluidez — 6 frames)
-    const tiers = Object.keys(RAREZA).map(Number);
-    const probTotal = tiers.reduce((s, t) => s + RAREZA[t].prob, 0);
+    // 3. Animación Ultra-Eficiente (Cero Lag) - DISEÑO PREMIUM
+    const ruletaUrl = `${require('../utils/constants').BASE_ASSETS_URL}ruleta2.gif`;
 
-    const randomTierWeighted = () => {
-      let dado = Math.random() * probTotal;
-      for (const t of tiers) {
-        dado -= RAREZA[t].prob;
-        if (dado <= 0) return getTierEmoji(t, true);
-      }
-      return getTierEmoji(1, true);
-    };
+    await interaction.editReply({
+      embeds: [
+        new EmbedBuilder()
+          .setAuthor({
+            name: `📡 INICIANDO PROTOCOLO DE EXTRACCIÓN: ${interaction.user.displayName}`,
+            iconURL: 'https://cdn-icons-png.flaticon.com/128/2554/2554930.png'
+          })
+          .setTitle('🕵️ ESCANEANDO FRECUENCIAS DE CARGAMENTO...')
+          .setDescription(
+            `> **SISTEMA:** \`Sincronizando con satélites...\`\n` +
+            `> **ESTADO:** \`ANALIZANDO ESTRUCTURA MOLECULAR\`\n\n` +
+            `**[ ░░░░░░░░░░░░░░░░░░░░ ] 0%**\n` +
+            `*Buscando firmas térmicas de vehículos exóticos...*`
+          )
+          .setImage(ruletaUrl)
+          .setColor(0xFFAA00)
+          .setFooter({ text: 'CONEXIÓN ENCRIPTADA · CARSDAE OS v4.2' }),
+      ],
+    });
 
-    // Creamos la "cinta" de 60 iconos
-    const sequence = [];
-    while (sequence.length < 60) {
-      sequence.push(randomTierWeighted());
-    }
+    // Pequeño truco: Una actualización intermedia a los 2.5s para que parezca que el escáner avanza
+    // Sigue siendo solo 1 edición extra, no causa lag.
+    await sleep(2500);
 
-    // El RESULTADO REAL estará en la posición 48 (centro del último frame)
-    sequence[48] = finalEmoji;
+    await interaction.editReply({
+      embeds: [
+        new EmbedBuilder()
+          .setAuthor({
+            name: `📡 ESCANEO AL 65%: ${interaction.user.displayName}`,
+            iconURL: 'https://cdn-icons-png.flaticon.com/128/2554/2554930.png'
+          })
+          .setTitle('🔍 ¡FIRMA DE CATEGORÍA DETECTADA!')
+          .setDescription(
+            `> **SISTEMA:** \`Triangulando coordenadas...\`\n` +
+            `> **ESTADO:** \`IDENTIFICANDO NÚMERO DE CHASIS\`\n\n` +
+            `**[ ████████████░░░░░░░░ ] 65%**\n` +
+            `*Extrayendo datos confidenciales del contenedor...*`
+          )
+          .setImage(ruletaUrl)
+          .setColor(0x00FF00)
+          .setFooter({ text: 'DESENCRIPTANDO ARCHIVOS... CASI LISTO' }),
+      ],
+    });
 
-    // Troll amago: si el coche es malo, ponemos una rareza alta justo antes para el suspense
-    const esMalo = coche.rareza <= 3;
-    const tieneTrollAmago = esMalo && (Math.random() < 0.40);
-    if (tieneTrollAmago) {
-      const topTiers = [5, 6, 7];
-      const tierFalso = topTiers[Math.floor(Math.random() * topTiers.length)];
-      sequence[47] = getTierEmoji(tierFalso, true);
-    }
-
-    // Aseguramos que los iconos alrededor del ganador sean distintos
-    for (let j = 46; j <= 50; j++) {
-      if (j !== 48 && (j !== 47 || !tieneTrollAmago) && sequence[j] === sequence[48]) {
-        sequence[j] = randomTierWeighted();
-      }
-    }
-
-    // Saltamos muchos al principio (rápido) y pocos al final (frenando).
-    // Optimizado: Solo 5 frames para evitar lag por rate-limits de Discord.
-    const frames = [10, 25, 38, 45, 46];
-
-    for (let i = 0; i < frames.length; i++) {
-      const idx = frames[i];
-
-      // Ventana de 5 iconos centrada en idx+2
-      const ventana = [
-        sequence[idx],
-        sequence[idx + 1],
-        sequence[idx + 2], // CENTRO (donde apunta la flecha)
-        sequence[idx + 3],
-        sequence[idx + 4]
-      ];
-
-      const ruletaVisual = `[ ${ventana.join(' | ')} ]`;
-      const esFinal = i === frames.length - 1;
-
-      // Volvemos a 'await' para asegurar el orden correcto en Discord y evitar duplicados visuales
-      await interaction.editReply({
-        embeds: [
-          new EmbedBuilder()
-            .setAuthor({
-              name: `🎰 ABRIENDO CARGAMENTO: ${interaction.user.displayName}`,
-              iconURL: interaction.user.displayAvatarURL({ dynamic: true })
-            })
-            .setDescription(
-              `### 🧪 SISTEMA DE ESCANEO ACTIVO\n` +
-              `> 　　　　🔻\n` +
-              `> ${ruletaVisual}\n` +
-              `> 　　　　🔺\n`
-            )
-            .setColor(esFinal ? COLORES[coche.rareza] : 0xFFAA00)
-            .setFooter({ text: FOOTER }),
-        ],
-      });
-
-      // Tiempos optimizados para fluidez y reducción de latencia
-      let sleepTime = 600;
-      if (i === frames.length - 3) sleepTime = 800;
-      if (i === frames.length - 2) sleepTime = 1100;
-      if (esFinal) sleepTime = 1000;
-
-      await sleep(sleepTime);
-    }
+    await sleep(2500);
 
     // 4. Fase 2: "Rareza detectada" (Confirmación)
     await interaction.editReply({
