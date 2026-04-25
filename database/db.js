@@ -14,9 +14,14 @@ const pool = mysql.createPool({
     database: process.env.DB_NAME,
     port: process.env.DB_PORT || 3306,
     waitForConnections: true,
-    connectionLimit: 10,
-    queueLimit: 0
+    connectionLimit: 50, // Aumentado para soportar más usuarios simultáneos
+    queueLimit: 0,
+    connectTimeout: 10000 // 10 segundos de timeout para evitar cuelgues
 });
+ 
+// Caché en memoria para perfiles (Optimización de velocidad)
+const CACHE_PERFILES = new Map();
+const CACHE_TTL = 5000; // 5 segundos de gracia
 
 // --- INICIALIZACIÓN ---
 async function inicializarDB() {
@@ -38,29 +43,51 @@ async function query(sql, params) {
 
 // --- FUNCIONES DE PERFIL ---
 async function obtenerPerfil(usuarioId) {
+    const ahora = Date.now();
+    
+    // 1. Intentar desde caché
+    if (CACHE_PERFILES.has(usuarioId)) {
+        const entry = CACHE_PERFILES.get(usuarioId);
+        if (ahora - entry.timestamp < CACHE_TTL) {
+            return entry.data;
+        }
+    }
+
+    // 2. Si no está o caducó, ir a la DB
     const rows = await query('SELECT * FROM perfiles WHERE usuario_id = ?', [usuarioId]);
+    
+    let profile = null;
     if (rows.length === 0) {
         await query('INSERT INTO perfiles (usuario_id, creditos, exp, piezas, rolls_disponibles) VALUES (?, 10000, 0, 0, 50)', [usuarioId]);
         const newRows = await query('SELECT * FROM perfiles WHERE usuario_id = ?', [usuarioId]);
-        return newRows[0];
+        profile = newRows[0];
+    } else {
+        profile = rows[0];
     }
-    return rows[0];
+
+    // 3. Guardar en caché y retornar
+    CACHE_PERFILES.set(usuarioId, { data: profile, timestamp: ahora });
+    return profile;
 }
 
 async function sumarCreditos(usuarioId, guildId, cantidad) {
     await query('UPDATE perfiles SET creditos = creditos + ? WHERE usuario_id = ?', [cantidad, usuarioId]);
+    CACHE_PERFILES.delete(usuarioId);
 }
 
 async function restarCreditos(usuarioId, guildId, cantidad) {
     await query('UPDATE perfiles SET creditos = creditos - ? WHERE usuario_id = ?', [cantidad, usuarioId]);
+    CACHE_PERFILES.delete(usuarioId);
 }
 
 async function sumarExp(usuarioId, guildId, cantidad) {
     await query('UPDATE perfiles SET exp = exp + ? WHERE usuario_id = ?', [cantidad, usuarioId]);
+    CACHE_PERFILES.delete(usuarioId);
 }
 
 async function sumarPieza(usuarioId, cantidad) {
     await query('UPDATE perfiles SET piezas = piezas + ? WHERE usuario_id = ?', [cantidad, usuarioId]);
+    CACHE_PERFILES.delete(usuarioId);
     return await actualizarMision(usuarioId, 'DESGUACE_PIEZA', cantidad);
 }
 
@@ -251,36 +278,91 @@ async function obtenerClan(clanId) {
 }
 
 // --- MISIONES ---
+/**
+ * Asegura que el usuario tenga exactamente 3 misiones asignadas para el día de hoy.
+ * Si no las tiene, las elige aleatoriamente y las inicializa en la base de datos.
+ */
+async function asegurarAsignacionMisiones(usuarioId) {
+    const hoy = new Date().toISOString().split('T')[0];
+    
+    // 1. Consultar misiones ya asignadas para hoy
+    const asignadas = await query('SELECT mission_id FROM misiones_progreso WHERE usuario_id = ? AND fecha = ?', [usuarioId, hoy]);
+    
+    if (asignadas.length > 0) {
+        // Limpieza de seguridad: Si por un error previo tiene más de 3, nos quedamos solo con las 3 primeras
+        if (asignadas.length > 3) {
+            const keepers = asignadas.slice(0, 3).map(a => a.mission_id);
+            await query('DELETE FROM misiones_progreso WHERE usuario_id = ? AND fecha = ? AND mission_id NOT IN (?, ?, ?)', 
+                [usuarioId, hoy, keepers[0], keepers[1], keepers[2]]);
+            return keepers;
+        }
+        return asignadas.map(a => a.mission_id);
+    }
+
+    // 2. Si no hay, elegir 3 aleatorias de la lista maestra
+    const misionesData = require('../data/misiones.json');
+    const elegidas = [];
+    const pool = [...misionesData];
+
+    for (let i = 0; i < 3 && pool.length > 0; i++) {
+        const index = Math.floor(Math.random() * pool.length);
+        elegidas.push(pool.splice(index, 1)[0]);
+    }
+
+    // 3. Inicializarlas en la DB
+    for (const m of elegidas) {
+        await query('INSERT INTO misiones_progreso (usuario_id, mission_id, progreso, completada, fecha) VALUES (?, ?, 0, 0, ?)', 
+            [usuarioId, m.id, hoy]);
+    }
+
+    return elegidas.map(m => m.id);
+}
+
 async function obtenerProgresoMisiones(usuarioId) {
     const misionesData = require('../data/misiones.json');
     const hoy = new Date().toISOString().split('T')[0];
     
-    const rows = await query('SELECT * FROM misiones_progreso WHERE usuario_id = ? AND fecha = ?', [usuarioId, hoy]);
+    // Asegurar que tenga 3 misiones asignadas
+    const IDsAsignadas = await asegurarAsignacionMisiones(usuarioId);
+    
+    // Consultar progreso solo de esas 3 (Manejo dinámico de placeholders para seguridad)
+    const placeholders = IDsAsignadas.map(() => '?').join(',');
+    const rows = await query(`SELECT * FROM misiones_progreso WHERE usuario_id = ? AND fecha = ? AND mission_id IN (${placeholders})`, 
+        [usuarioId, hoy, ...IDsAsignadas]);
+    
     const progresoMap = new Map(rows.map(r => [r.mission_id, r]));
 
-    return misionesData.map(m => {
-        const p = progresoMap.get(m.id);
-        return {
-            ...m,
-            progreso: p?.progreso || 0,
-            completada: p?.completada === 1
-        };
-    });
+    // Solo devolver las misiones que están en la base de datos para hoy
+    return misionesData
+        .filter(m => IDsAsignadas.includes(m.id))
+        .map(m => {
+            const p = progresoMap.get(m.id);
+            return {
+                ...m,
+                progreso: p?.progreso || 0,
+                completada: p?.completada === 1
+            };
+        });
 }
 
 async function actualizarMision(usuarioId, tipo, cantidad) {
     const misionesData = require('../data/misiones.json');
     const hoy = new Date().toISOString().split('T')[0];
-    const misionesInteres = misionesData.filter(m => m.tipo === tipo);
+    
+    // Obtener IDs de las 3 misiones asignadas hoy
+    const IDsAsignadas = await asegurarAsignacionMisiones(usuarioId);
+    
+    // Filtrar misiones maestras por tipo Y que estén asignadas hoy
+    const misionesInteres = misionesData.filter(m => m.tipo === tipo && IDsAsignadas.includes(m.id));
     const completadasAhora = [];
 
     for (const m of misionesInteres) {
-        // Verificar si ya la completó hoy
+        // Verificar progreso actual
         const [status] = await query('SELECT * FROM misiones_progreso WHERE usuario_id = ? AND mission_id = ? AND fecha = ?', [usuarioId, m.id, hoy]);
         
-        if (status?.completada === 1) continue;
+        if (!status || status.completada === 1) continue;
 
-        let nuevoProgreso = (status?.progreso || 0) + cantidad;
+        let nuevoProgreso = (status.progreso || 0) + cantidad;
         let seCompleto = 0;
 
         if (nuevoProgreso >= m.objetivo) {
@@ -292,13 +374,8 @@ async function actualizarMision(usuarioId, tipo, cantidad) {
             completadasAhora.push(m);
         }
 
-        if (status) {
-            await query('UPDATE misiones_progreso SET progreso = ?, completada = ? WHERE usuario_id = ? AND mission_id = ? AND fecha = ?', 
-                [nuevoProgreso, seCompleto, usuarioId, m.id, hoy]);
-        } else {
-            await query('INSERT INTO misiones_progreso (usuario_id, mission_id, progreso, completada, fecha) VALUES (?, ?, ?, ?, ?)', 
-                [usuarioId, m.id, nuevoProgreso, seCompleto, hoy]);
-        }
+        await query('UPDATE misiones_progreso SET progreso = ?, completada = ? WHERE usuario_id = ? AND mission_id = ? AND fecha = ?', 
+            [nuevoProgreso, seCompleto, usuarioId, m.id, hoy]);
     }
 
     return completadasAhora;

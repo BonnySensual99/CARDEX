@@ -45,7 +45,7 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setAuthor({ 
         name: 'ASIGNACIONES DIARIAS: CARSDAE HQ', 
-        iconURL: 'https://cdn-icons-png.flaticon.com/512/3592/3592259.png' 
+        iconURL: getMoneyEmoji(true) 
       })
       .setTitle('📋 OBJETIVOS DE HOY')
       .setDescription(

@@ -35,7 +35,7 @@ const {
 const { cancelarExpiracion } = require('./utils/rollsActivos');
 const { COLORES, RAREZA, TIERS_DESC,
   FOOTER, COLOR_ERROR,
-  COLOR_EXITO, SEP, fmtNum, getTierEmoji } = require('./utils/constants');
+  COLOR_EXITO, SEP, fmtNum, getTierEmoji, getTierURL, getTrophyEmoji, getMoneyEmoji } = require('./utils/constants');
 const { getCarImage } = require('./utils/images');
 const coches = require('./data/coches.json');
 
@@ -374,7 +374,7 @@ client.on(Events.InteractionCreate, async (interaction) => {
     const embedFichaTecnica = new EmbedBuilder()
       .setAuthor({
         name: `🏆 ¡Coche añadido al garaje!`,
-        iconURL: interaction.user.displayAvatarURL({ dynamic: true }),
+        iconURL: getTrophyEmoji(true),
       })
       .setTitle(`${coche.marca} ${coche.modelo} (${coche.anio})`)
       .setDescription(
@@ -398,8 +398,9 @@ client.on(Events.InteractionCreate, async (interaction) => {
         }
       )
       .setColor(resultado.yaLoTenia ? 0x95A5A6 : COLOR_EXITO)
+      .setThumbnail(getTierURL(coche.rareza))
       .setImage(carUrl)
-      .setFooter({ text: `${FOOTER}  ·  Tiradas: ${limite.normales}/50 normales${limite.extras > 0 ? ` + ${limite.extras} extra 💎` : ''}` });
+      .setFooter({ text: `${FOOTER}  ·  Tiradas: ${limite.normales}/50 normales${limite.extras > 0 ? ` + ${limite.extras} extra 💎` : ''}`, iconURL: getMoneyEmoji(true) });
 
     if (resultado.levelUp?.subio) {
       embedFichaTecnica.addFields({
@@ -772,7 +773,6 @@ client.on(Events.MessageCreate, async (message) => {
     return message.reply('❌ Este comando administrativo solo puede usarse mediante comandos de barra (`/`).');
   }
 
-  let msgRespuesta = null;
   const subcommands = (comando.data.options || []).filter(opt => opt.type === 1 || opt.constructor.name.includes('Subcommand')).map(opt => opt.name);
   const hasSubcommand = args[0] && subcommands.includes(args[0].toLowerCase());
   const effectiveArgs = hasSubcommand ? args.slice(1) : args;
@@ -782,6 +782,9 @@ client.on(Events.MessageCreate, async (message) => {
   const subObj = subName ? (comando.data.options || []).find(o => o.name === subName) : null;
   const optionsList = subObj ? (subObj.options || []) : (comando.data.options || []);
 
+  let msgRespuesta = null;
+  let isCreating = false; // Bloqueo para evitar duplicados en condiciones de carrera
+
   const pseudoInteraction = {
     user: message.author,
     member: message.member,
@@ -790,12 +793,37 @@ client.on(Events.MessageCreate, async (message) => {
     channel: message.channel,
     client: client,
     reply: async (payload) => {
-      msgRespuesta = await message.reply(payload);
-      return msgRespuesta;
+      if (isCreating) {
+        // Esperar un poco si ya se está creando un mensaje
+        for(let i=0; i<10 && isCreating; i++) await new Promise(r => setTimeout(r, 200));
+      }
+      if (msgRespuesta) return await msgRespuesta.edit(payload);
+      
+      isCreating = true;
+      try {
+        msgRespuesta = await message.reply(payload);
+        return msgRespuesta;
+      } finally {
+        isCreating = false;
+      }
     },
     editReply: async (payload) => {
-      if (msgRespuesta) return await msgRespuesta.edit(payload);
-      else msgRespuesta = await message.channel.send(payload);
+      if (isCreating) {
+        // Si se está creando el mensaje original, esperamos a que termine
+        for(let i=0; i<10 && isCreating; i++) await new Promise(r => setTimeout(r, 200));
+      }
+
+      if (msgRespuesta) {
+        return await msgRespuesta.edit(payload).catch(() => {});
+      } else {
+        isCreating = true;
+        try {
+          msgRespuesta = await message.channel.send(payload);
+          return msgRespuesta;
+        } finally {
+          isCreating = false;
+        }
+      }
     },
     followUp: (payload) => message.channel.send(payload),
     deferUpdate: async () => { },

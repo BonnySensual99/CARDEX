@@ -18,7 +18,7 @@ const {
 } = require('discord.js');
 
 const { getCarImage, getHubImage } = require('../utils/images');
-const { COLORES, RAREZA, TIERS_DESC, FOOTER, COLOR_DIARIO, COLOR_ERROR, COLOR_EXITO, SEP, SEP_SLIM, fmtNum, getTierEmoji, getMoneyEmoji, getPowerEmoji } = require('../utils/constants');
+const { COLORES, RAREZA, TIERS_DESC, FOOTER, COLOR_DIARIO, COLOR_ERROR, COLOR_EXITO, SEP, SEP_SLIM, fmtNum, getTierEmoji, getMoneyEmoji, getPowerEmoji, getModifiedCV } = require('../utils/constants');
 const { 
     obtenerPerfil, sumarPieza, añadirCocheGaraje, sumarCreditos, restarCreditos, sumarExtraRolls,
     obtenerMercado, obtenerItemMercado, procesarCompraMercado, contarItemsMercado, obtenerInventario,
@@ -240,7 +240,13 @@ async function embedTaller(userId, guildId, stage = 1) {
     const embed = new EmbedBuilder()
       .setAuthor({ name: `CENTRO TÉCNICO — STAGE ${stage}`, iconURL: 'https://cdn-icons-png.flaticon.com/512/3061/3061858.png' })
       .setTitle(`MEJORAS: ${coche.marca} ${coche.modelo}`)
-      .setDescription(`💳 **Saldo:** ${fmtNum(p?.creditos ?? 0)} ${getMoneyEmoji()}\n${SEP}`)
+      .setDescription(
+          `💳 **Saldo:** ${fmtNum(p?.creditos ?? 0)} ${getMoneyEmoji()}\n` +
+          `${SEP}\n` +
+          `📊 **RENDIMIENTO ACTUAL:**\n` +
+          `⚡ **Potencia:** \`${getModifiedCV(coche.cv, instancia)} CV\` | ⚖️ **Peso:** \`${fmtNum(Math.round(coche.peso_kg * (1 - (instancia.peso * 0.03))))} kg\`\n` +
+          `${SEP}`
+      )
       .addFields(
         { name: `🚀 Motor`, value: `${getProgresoStr(instancia.motor || 0)}\n**${fPrice(instancia.motor || 0)}**`, inline: true },
         { name: `💨 Turbo`, value: `${getProgresoStr(instancia.turbo || 0)}\n**${fPrice(instancia.turbo || 0)}**`, inline: true },

@@ -251,7 +251,8 @@ module.exports = {
         trans:  Math.min(5, Math.floor(Math.random() * 2) + Math.max(0, minUpgrade - 1)),
         susp:   Math.min(5, Math.floor(Math.random() * 2) + Math.max(0, minUpgrade - 1)),
         frenos: Math.min(5, Math.floor(Math.random() * 2) + Math.max(0, minUpgrade - 1)),
-        gomas:  Math.min(5, Math.floor(Math.random() * 2) + Math.max(0, minUpgrade - 1))
+        gomas:  Math.min(5, Math.floor(Math.random() * 2) + Math.max(0, minUpgrade - 1)),
+        peso:   0
       };
 
       // 4. Lógica de "Bot Overclock" (Rival de Élite / Nigga-Tech) - 10% de probabilidad

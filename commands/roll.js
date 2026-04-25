@@ -18,7 +18,7 @@ const { checkCooldown, setCooldown,
   formatearTiempo, getRollCooldown } = require('../utils/cooldowns');
 const { registrarExpiracion, EXPIRY_MS } = require('../utils/rollsActivos');
 const { COLORES, RAREZA, FOOTER, COLOR_NEUTRO,
-  COLOR_ERROR, SEP, fmtNum, getMoneyEmoji, getTrophyEmoji, getTierEmoji, getPowerEmoji } = require('../utils/constants');
+  COLOR_ERROR, SEP, fmtNum, getMoneyEmoji, getTrophyEmoji, getTierEmoji, getTierURL, getPowerEmoji } = require('../utils/constants');
 const { getCarImage, getTierIcon } = require('../utils/images');
 const coches = require('../data/coches.json');
 
@@ -163,9 +163,8 @@ module.exports = {
     }
 
     // Saltamos muchos al principio (rápido) y pocos al final (frenando).
-    // El centro de la ventana de 5 iconos es idx+2.
-    // El último frame es 46 → centro = sequence[48] = ganador real.
-    const frames = [4, 12, 20, 27, 34, 40, 44, 45, 46];
+    // Optimizado: Solo 5 frames para evitar lag por rate-limits de Discord.
+    const frames = [10, 25, 38, 45, 46];
 
     for (let i = 0; i < frames.length; i++) {
       const idx = frames[i];
@@ -182,6 +181,7 @@ module.exports = {
       const ruletaVisual = `[ ${ventana.join(' | ')} ]`;
       const esFinal = i === frames.length - 1;
 
+      // Volvemos a 'await' para asegurar el orden correcto en Discord y evitar duplicados visuales
       await interaction.editReply({
         embeds: [
           new EmbedBuilder()
@@ -200,13 +200,11 @@ module.exports = {
         ],
       });
 
-      // Tiempos estilo CS:GO — frena progresivamente
-      let sleepTime = 700;
-      if (i === frames.length - 5) sleepTime = 800;
-      if (i === frames.length - 4) sleepTime = 1000;
-      if (i === frames.length - 3) sleepTime = 1200;
-      if (i === frames.length - 2) sleepTime = 1600;
-      if (esFinal) sleepTime = 1500;
+      // Tiempos optimizados para fluidez y reducción de latencia
+      let sleepTime = 600;
+      if (i === frames.length - 3) sleepTime = 800;
+      if (i === frames.length - 2) sleepTime = 1100;
+      if (esFinal) sleepTime = 1000;
 
       await sleep(sleepTime);
     }
@@ -259,6 +257,7 @@ module.exports = {
         `${SEP}`
       )
       .setColor(COLORES[coche.rareza])
+      .setThumbnail(getTierURL(coche.rareza))
       .setImage(carUrl);
 
     if (esFinDeSemana()) {

@@ -14,7 +14,7 @@ const {
 } = require('../database/db');
 const { COLORES, RAREZA, TIERS_DESC,
   FOOTER, COLOR_NEUTRO, SEP_SLIM,
-  COLOR_PERFIL, SEP, fmtNum, getMoneyEmoji, getTierEmoji, getPowerEmoji, getTrophyEmoji } = require('../utils/constants');
+  COLOR_PERFIL, SEP, fmtNum, getMoneyEmoji, getTierEmoji, getTierURL, getPowerEmoji, getTrophyEmoji, getModifiedCV } = require('../utils/constants');
 const { getCarImage } = require('../utils/images');
 const { calcularNivel, obtenerRango, generarBarraExp, calcularMaxApuesta } = require('../utils/levels');
 const coches = require('../data/coches.json');
@@ -90,7 +90,7 @@ module.exports = {
     const pctColeccion = Math.round((totalModelos / TOTAL_CATALOGO) * 100);
 
     // Desglose de rarezas coleccionadas
-    const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0 };
+    const counts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0 };
     const unicosId = new Set();
     for (const e of inventario) {
       if (!unicosId.has(e.coche_id)) {
@@ -101,8 +101,7 @@ module.exports = {
     }
     const breakdownStr = Object.keys(counts)
       .reverse()
-      .filter(r => counts[r] > 0)
-      .map(r => `${getTierEmoji(r, true)} \`${counts[r]}\``)
+      .map(r => `${getTierEmoji(Number(r), true)} \`${counts[r]}\``)
       .join('  ');
 
     // Hallar mejor coche
@@ -128,7 +127,7 @@ module.exports = {
     const embed = new EmbedBuilder()
       .setAuthor({
         name: `LICENCIA DE PILOTO: ${rangoActual.nombre.toUpperCase()}`,
-        iconURL: 'https://cdn-icons-png.flaticon.com/512/1048/1048953.png',
+        iconURL: getMoneyEmoji(true),
       })
       .setTitle(`📇 EXTRACCIÓN DE DATOS: ${clanTag}${target.displayName.toUpperCase()}`)
       .setThumbnail(target.displayAvatarURL({ dynamic: true, size: 512 }))
@@ -172,14 +171,17 @@ module.exports = {
         {
           name: 'Vehículo en Pista',
           value: cocheActivo
-            ? `${getTierEmoji(cocheActivo.rareza, true)} **${cocheActivo.marca} ${cocheActivo.modelo}**\n\`${RAREZA[cocheActivo.rareza].grado}\` · ${getPowerEmoji()} \`${cocheActivo.cv} CV\``
+            ? `${getTierEmoji(cocheActivo.rareza, true)} **${cocheActivo.marca} ${cocheActivo.modelo}**\n` +
+              `\`${RAREZA[cocheActivo.rareza].grado}\` · ${getPowerEmoji()} \`${getModifiedCV(cocheActivo.cv, instanciaActiva)} CV\`\n` +
+              `⚖️ \`${fmtNum(Math.round(cocheActivo.peso_kg * (1 - (instanciaActiva.peso * 0.03))))} kg\``
             : '❌ *Sin coche asignado*\nUsa `/activo` para elegir uno.',
           inline: true
         },
         {
           name: 'Mayor Hallazgo',
           value: mejorCoche
-            ? `${getTierEmoji(mejorCoche.rareza, true)} **${mejorCoche.marca} ${mejorCoche.modelo}**\n\`${RAREZA[mejorCoche.rareza].grado}\` · ${getPowerEmoji()} \`${mejorCoche.cv} CV\``
+            ? `${getTierEmoji(mejorCoche.rareza, true)} **${mejorCoche.marca} ${mejorCoche.modelo}**\n` +
+              `\`${RAREZA[mejorCoche.rareza].grado}\` · ${getPowerEmoji()} \`${mejorCoche.cv} CV\``
             : 'Nada destacable aún',
           inline: true
         }

@@ -23,13 +23,13 @@ function getCarImage(coche) {
 
     try {
         let fullPath = path.resolve(process.cwd(), coche.url_imagen);
-        
+
         // --- LOGICA DE TOLERANCIA A EXTENSIONES ---
         if (!fs.existsSync(fullPath)) {
             const dir = path.dirname(fullPath);
             const ext = path.extname(fullPath);
             const base = path.basename(fullPath, ext);
-            
+
             const extensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
             for (const newExt of extensions) {
                 const tryPath = path.join(dir, base + newExt);
@@ -52,7 +52,7 @@ function getCarImage(coche) {
 
             const fileName = path.basename(fullPath);
             const attachment = new AttachmentBuilder(fullPath, { name: fileName });
-            
+
             return {
                 url: `attachment://${fileName}`,
                 files: [attachment]
@@ -68,7 +68,9 @@ function getCarImage(coche) {
 }
 
 // ACELERADOR CDN (jsDelivr): Hace que las imágenes carguen a la velocidad de la luz
-const JSDELIVR_BASE_URL = 'https://cdn.jsdelivr.net/gh/BonnySensual99/CARDEX@main/';
+const constants = require('./constants');
+const BASE_ASSETS_URL = constants.BASE_ASSETS_URL || 'https://cdn.jsdelivr.net/gh/BonnySensual99/CARDEX@main/assets/icons/';
+const JSDELIVR_BASE_URL = BASE_ASSETS_URL.replace('assets/icons/', '');
 
 /**
  * Obtiene el icono de categoría (Tier) desde assets/icons/.
@@ -93,9 +95,9 @@ function getTierIcon(rarezaLevel) {
  */
 function getHubImage() {
     // Usar CDN directamente para máxima velocidad
-    return { 
-        url: `${JSDELIVR_BASE_URL}assets/hub_cardex.webp`, 
-        files: [] 
+    return {
+        url: `${JSDELIVR_BASE_URL}assets/hub_cardex.webp`,
+        files: []
     };
 }
 
@@ -104,9 +106,9 @@ function getHubImage() {
  * @returns {Object} { url, files }
  */
 function getDesguaceImage() {
-    return { 
-        url: `${JSDELIVR_BASE_URL}assets/desguace.webp`, 
-        files: [] 
+    return {
+        url: `${JSDELIVR_BASE_URL}assets/desguace.webp`,
+        files: []
     };
 }
 

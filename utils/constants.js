@@ -15,21 +15,11 @@ const COLORES = {
   8: 0xFF00FF, // Magenta Neón (Secreto)
 };
 
+/** URL base para los assets alojados en GitHub (vía jsDelivr para velocidad) */
+const BASE_ASSETS_URL = 'https://cdn.jsdelivr.net/gh/BonnySensual99/CARDEX@main/assets/icons/';
+
 /**
  * Metadatos completos de cada tier de rareza.
- *
- * Distribución de probabilidades (suma = 100):
- *  — Común: 45%
- *  — Poco común: 23% 
- *  — Clásico / Vintage: 15%
- *  — Raro: 9%        
- *  — Épico: 5%      
- *  — Legendario: 2.4% 
- *  — Mítico: 0.5%     
- *  — Secreto: 0.1%    (Extremadamente raro)
- *
- * creditos:    créditos obtenidos al reclamar un coche de esta rareza
- * multCarrera: multiplicador de fuerza en el sistema de carreras
  */
 const RAREZA = {
   1: {
@@ -38,6 +28,7 @@ const RAREZA = {
     barra: '▰▱▱▱▱▱▱',
     grado: 'C',
     asset: 'C.png',
+    url: `${BASE_ASSETS_URL}C.png`,
     medalla: '⚪',
     icono: '⚪',
     prob: 44.00,
@@ -52,6 +43,7 @@ const RAREZA = {
     barra: '▰▰▱▱▱▱▱',
     grado: 'B',
     asset: 'B.png',
+    url: `${BASE_ASSETS_URL}B.png`,
     medalla: '🟢',
     icono: '🟢',
     prob: 22.00,
@@ -66,6 +58,7 @@ const RAREZA = {
     barra: '▰▰▰▱▱▱▱',
     grado: 'V',
     asset: 'vintage.png',
+    url: `${BASE_ASSETS_URL}vintage.png`,
     medalla: '📜',
     icono: '📜',
     prob: 15.00,
@@ -80,6 +73,7 @@ const RAREZA = {
     barra: '▰▰▰▰▱▱▱',
     grado: 'A',
     asset: 'A.png',
+    url: `${BASE_ASSETS_URL}A.png`,
     medalla: '🔵',
     icono: '🔵',
     prob: 9.00,
@@ -94,6 +88,7 @@ const RAREZA = {
     barra: '▰▰▰▰▰▱▱',
     grado: 'E',
     asset: 'E.gif',
+    url: `${BASE_ASSETS_URL}E.gif`,
     medalla: '💎',
     icono: '💎',
     prob: 6.00,
@@ -108,6 +103,7 @@ const RAREZA = {
     barra: '▰▰▰▰▰▰▱',
     grado: 'L',
     asset: 'L.gif',
+    url: `${BASE_ASSETS_URL}L.gif`,
     medalla: '👑',
     icono: '👑',
     prob: 3.40,
@@ -122,6 +118,7 @@ const RAREZA = {
     barra: '▰▰▰▰▰▰▰',
     grado: 'M',
     asset: 'M.gif',
+    url: `${BASE_ASSETS_URL}M.gif`,
     medalla: '🔥',
     icono: '🔥',
     prob: 0.50,
@@ -136,6 +133,7 @@ const RAREZA = {
     barra: '▰▰▰▰▰▰▰',
     grado: '????',
     asset: 'secret.gif',
+    url: `${BASE_ASSETS_URL}secret.gif`,
     medalla: '🌈',
     icono: '🌈',
     prob: 0.10,
@@ -205,38 +203,60 @@ function fmtNum(n) {
 }
 
 /**
+ * Calcula la potencia (CV) modificada por las mejoras del taller.
+ */
+function getModifiedCV(baseCV, mejoras = { motor: 0, turbo: 0 }) {
+  const boost = 1 + (mejoras.motor * 0.05) + (mejoras.turbo * 0.02);
+  return Math.round(baseCV * boost);
+}
+
+/**
  * Calcula la fuerza de un coche en carrera basándose en datos técnicos y el circuito.
  * @param {object} coche - Objeto coche del catálogo
  * @param {object} circuito - Objeto del circuito actual
  * @returns {number}
  */
-function calcularFuerza(coche, circuito = {}, mejoras = { motor: 0, turbo: 0, trans: 0, susp: 0, frenos: 0, gomas: 0 }) {
+function calcularFuerza(coche, circuito = {}, mejoras = {}) {
   const mult = RAREZA[coche.rareza].multCarrera;
 
+  // Asegurar que todas las mejoras tengan un valor numérico (evita NaN)
+  const m = {
+    motor:  mejoras.motor  || 0,
+    turbo:  mejoras.turbo  || 0,
+    trans:  mejoras.trans  || 0,
+    susp:   mejoras.susp   || 0,
+    frenos: mejoras.frenos || 0,
+    gomas:  mejoras.gomas  || 0,
+    peso:   mejoras.peso   || 0
+  };
+
   // 1. Potencia base ajustada por rareza y MEJORAS DE MOTOR Y TURBO
-  // Cada nivel de motor añade un 5% y cada nivel de turbo un 2% extra a la potencia base
-  const boostPotencia = 1 + (mejoras.motor * 0.05) + (mejoras.turbo * 0.02);
+  const boostPotencia = 1 + (m.motor * 0.05) + (m.turbo * 0.02);
   let fuerza = coche.cv * mult * boostPotencia;
 
   // 2. Bonus por tipo de circuito + MEJORAS ESPECÍFICAS
   const nombreCir = (circuito.nombre || '').toLowerCase();
+  
+  // Peso efectivo reducido por mejoras de alivianamiento
+  const pesoBase = coche.peso_kg || 1200;
+  const pesoEfectivo = pesoBase * (1 - (m.peso * 0.03)); // 3% menos peso por nivel
 
   // Circuitos de VELOCIDAD (Mejoras: TURBO)
   if (nombreCir.includes('autopista') || nombreCir.includes('recta') || nombreCir.includes('jerez')) {
-    const boostTurbo = 1 + (mejoras.turbo * 0.10);
+    const boostTurbo = 1 + (m.turbo * 0.10);
     fuerza += (coche.velocidad_maxima * 0.5 * boostTurbo);
   }
 
-  // Circuitos de AGILIDAD/CURVAS (Mejoras: SUSPENSIÓN Y FRENOS)
+  // Circuitos de AGILIDAD/CURVAS (Mejoras: SUSPENSIÓN, FRENOS Y PESO)
   if (nombreCir.includes('col de') || nombreCir.includes('cabrera') || nombreCir.includes('pajares')) {
-    const boostManejo = (mejoras.susp * 30) + (mejoras.frenos * 20);
-    const bonusPeso = Math.max(-300, (1500 - (coche.peso_kg || 1200)) * 0.15); // Clamp penalización
+    const boostManejo = (m.susp * 30) + (m.frenos * 20) + (m.peso * 25);
+    const bonusPeso = Math.max(-300, (1500 - pesoEfectivo) * 0.15); // Clamp penalización
     fuerza += (bonusPeso + boostManejo);
   }
 
   // Circuitos URBANOS (Aceleración) (Mejoras: TRANSMISIÓN)
   if (nombreCir.includes('urbano') || nombreCir.includes('callejero') || nombreCir.includes('marítimo')) {
-    const boostTrans = 1 + (mejoras.trans * 0.08);
+    const boostTrans = 1 + (m.trans * 0.08);
     const bonusAcel = Math.max(-400, (8 - coche.aceleracion_0_100) * 20) * boostTrans; // Clamp penalización
     fuerza += bonusAcel;
   }
@@ -245,7 +265,7 @@ function calcularFuerza(coche, circuito = {}, mejoras = { motor: 0, turbo: 0, tr
   fuerza = Math.max(100, fuerza);
 
   // Bonus Gomas (Agarre general - Multiplicador de tracción)
-  fuerza *= (1 + (mejoras.gomas * 0.02));
+  fuerza *= (1 + (m.gomas * 0.02));
 
   // 3. Factor de Consistencia (92%–108%) - Variabilidad para permitir sorpresas mecánicas
   const luck = 0.92 + Math.random() * 0.16;
@@ -286,20 +306,40 @@ function getTierEmoji(rarezaLevel, single = false) {
   return emoji;
 }
 
-/** Obtiene el emoji dinámico para el dinero. */
-function getMoneyEmoji() { return global.EMOJIS_TIER?.Money || '💰'; }
+/** Obtiene la URL del asset para un Tier */
+function getTierURL(rarezaLevel) {
+  return RAREZA[rarezaLevel]?.url || null;
+}
 
-/** Obtiene el emoji dinámico para la potencia. */
-function getPowerEmoji() { return global.EMOJIS_TIER?.Power || '⚡'; }
+/** Obtiene el emoji dinámico para el dinero o su URL GIF. */
+function getMoneyEmoji(asURL = false) { 
+  if (asURL) return `${BASE_ASSETS_URL}money_logo.gif`;
+  return global.EMOJIS_TIER?.Money || '💰'; 
+}
 
-/** Obtiene el emoji dinámico para ítems bloqueados. */
-function getLockedEmoji() { return global.EMOJIS_TIER?.Locked || '🔒'; }
+/** Obtiene el emoji dinámico para la potencia o su URL GIF. */
+function getPowerEmoji(asURL = false) { 
+  if (asURL) return `${BASE_ASSETS_URL}Power.gif`;
+  return global.EMOJIS_TIER?.Power || '⚡'; 
+}
 
-/** Obtiene el emoji dinámico para ítems desbloqueados. */
-function getUnlockedEmoji() { return global.EMOJIS_TIER?.Unlocked || '✅'; }
+/** Obtiene el emoji dinámico para ítems bloqueados o su URL GIF. */
+function getLockedEmoji(asURL = false) { 
+  if (asURL) return `${BASE_ASSETS_URL}Lock.gif`;
+  return global.EMOJIS_TIER?.Locked || '🔒'; 
+}
 
-/** Obtiene el emoji dinámico para el trofeo de victorias. */
-const getTrophyEmoji = () => global.EMOJIS_TIER?.Trophy || '🏆';
+/** Obtiene el emoji dinámico para ítems desbloqueados o su URL GIF. */
+function getUnlockedEmoji(asURL = false) { 
+  if (asURL) return `${BASE_ASSETS_URL}unlocked.gif`;
+  return global.EMOJIS_TIER?.Unlocked || '✅'; 
+}
+
+/** Obtiene el emoji dinámico para el trofeo de victorias o su URL GIF. */
+const getTrophyEmoji = (asURL = false) => {
+  if (asURL) return `${BASE_ASSETS_URL}trophy.gif`;
+  return global.EMOJIS_TIER?.Trophy || '🏆';
+};
 
 /** Definiciones de climas para el desguace */
 const CLIMAS_DESGUACE = {
@@ -355,6 +395,7 @@ const CLIMAS_DESGUACE = {
 };
 
 module.exports = {
+  BASE_ASSETS_URL,
   COLORES,
   RAREZA,
   TIERS_DESC,
@@ -372,11 +413,13 @@ module.exports = {
   SEP_SLIM,
   fmtNum,
   getTierEmoji,
+  getTierURL,
   getMoneyEmoji,
   getPowerEmoji,
   getLockedEmoji,
   getUnlockedEmoji,
   getTrophyEmoji,
+  getModifiedCV,
   calcularFuerza,
   comentarioCarrera,
   /** Utility logger for production diagnostics */
